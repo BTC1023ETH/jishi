@@ -1,0 +1,42 @@
+# ===== 依赖 =====
+node_modules/
+
+# ===== 构建产物 =====
+dist/
+dist-ssr/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# ===== 环境变量（含敏感信息，绝不提交）=====
+.env
+.env.*
+!.env.example
+
+# ===== 后端运行时数据 =====
+server/data/
+server/node_modules/
+
+# ===== 日志 =====
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev.log
+
+# ===== 编辑器 / 系统 =====
+.DS_Store
+Thumbs.db
+.idea/
+.codebuddy/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===== 本地临时文件 =====
+*.local
