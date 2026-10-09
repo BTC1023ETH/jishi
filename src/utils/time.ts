@@ -68,6 +68,17 @@ export function addDays(ts: number, days: number): number {
   return ts + days * 86400000;
 }
 
+/** 是否为同一天（本地时区） */
+export function isSameDay(a: number, b: number): boolean {
+  return dayStart(a) === dayStart(b);
+}
+
+/** 中文完整日期，如 2026年10月9日 周五 */
+export function formatFullDateCN(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${formatWeekday(ts)}`;
+}
+
 /** 判断 ts 是否落在睡眠时段内（跨夜） */
 export function isInSleepWindow(ts: number, sleepStart: string, sleepEnd: string): boolean {
   const nowMin = new Date(ts).getHours() * 60 + new Date(ts).getMinutes();

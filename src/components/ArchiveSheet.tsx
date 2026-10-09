@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
-import { db } from '../db';
+import { Plus, X } from 'lucide-react';
+import { db, newRecordId } from '../db';
 import { useAppStore } from '../store';
 import { addRecord, recomputeDuration } from '../utils/records';
 import { formatClock, formatDurationMin } from '../utils/time';
-import type { ValueScore } from '../types';
+import type { Subcategory, ValueScore } from '../types';
 import BottomSheet from './BottomSheet';
 import CategoryPicker from './CategoryPicker';
 import TimeRangeModal from './TimeRangeModal';
@@ -19,9 +20,13 @@ export default function ArchiveSheet() {
   const [endAt, setEndAt] = useState(0);
   const [frameworkId, setFrameworkId] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
+  const [eventName, setEventName] = useState('');
   const [note, setNote] = useState('');
   const [valueScore, setValueScore] = useState<ValueScore | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customFrameworkId, setCustomFrameworkId] = useState('');
 
   const frameworks = useLiveQuery(() => db.frameworks.orderBy('order').toArray(), []);
   const subcategories = useLiveQuery(() => db.subcategories.orderBy('order').toArray(), []);
@@ -37,6 +42,9 @@ export default function ArchiveSheet() {
       setSubcategoryId(draft.presetSubcategoryId ?? firstSub);
       setNote(draft.presetNote ?? '');
       setValueScore(draft.presetValueScore ?? null);
+      setEventName(draft.presetEventName ?? '');
+      setShowAddCustom(false);
+      setCustomFrameworkId(firstFwId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft]);
@@ -52,6 +60,35 @@ export default function ArchiveSheet() {
     setStep(2);
   };
 
+  const addCustomSubcategory = async () => {
+    const name = customName.trim();
+    if (!name) {
+      showToast('请输入事件名称');
+      return;
+    }
+    const fwId = customFrameworkId || frameworkId || frameworks?.[0]?.id;
+    if (!fwId) {
+      showToast('请先选择所属框架');
+      return;
+    }
+    // 已存在则直接选中
+    const existed = subcategories?.find((s) => s.name === name && s.frameworkId === fwId);
+    if (existed) {
+      setSubcategoryId(existed.id);
+      setFrameworkId(fwId);
+    } else {
+      const id = 'custom-' + newRecordId();
+      const order = (subcategories ?? []).filter((s) => s.frameworkId === fwId).length;
+      const sub: Subcategory = { id, frameworkId: fwId, name, order };
+      await db.subcategories.add(sub);
+      setSubcategoryId(id);
+      setFrameworkId(fwId);
+      showToast(`已新建事件「${name}」并选中`);
+    }
+    setShowAddCustom(false);
+    setCustomName('');
+  };
+
   const save = async () => {
     await addRecord({
       startAt,
@@ -59,6 +96,7 @@ export default function ArchiveSheet() {
       durationMin: recomputeDuration(startAt, endAt),
       frameworkId,
       subcategoryId,
+      eventName: eventName.trim() || undefined,
       note,
       valueScore,
       source: draft?.source ?? 'manual',
@@ -104,6 +142,19 @@ export default function ArchiveSheet() {
             >
               {formatClock(startAt)} - {formatClock(endAt)} · {formatDurationMin(duration)}
             </button>
+
+            {/* 事件名称（#7） */}
+            <div>
+              <p className="mb-1.5 text-xs text-text-secondary">事件名称</p>
+              <input
+                type="text"
+                value={eventName}
+                onChange={(e) => setEventName(e.target.value)}
+                placeholder="例如：完成迹时 2.0 计划表"
+                className="w-full rounded-xl border border-line bg-bg-card2 px-3 py-2.5 text-sm text-text outline-none focus:border-binance"
+              />
+            </div>
+
             <CategoryPicker
               frameworkId={frameworkId}
               subcategoryId={subcategoryId}
@@ -116,6 +167,52 @@ export default function ArchiveSheet() {
                 if (p.valueScore !== undefined) setValueScore(p.valueScore);
               }}
             />
+
+            {/* 自定义事件（#8） */}
+            <div>
+              {!showAddCustom ? (
+                <button
+                  onClick={() => setShowAddCustom(true)}
+                  className="flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-binance/40 py-2 text-xs text-binance"
+                >
+                  <Plus size={13} /> 添加自定义事件
+                </button>
+              ) : (
+                <div className="rounded-xl border border-binance/30 bg-binance/5 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-binance">新建事件</p>
+                    <button onClick={() => setShowAddCustom(false)} className="text-text-secondary">
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="事件名称"
+                    className="mt-2 w-full rounded-lg border border-line bg-bg-card2 px-2.5 py-1.5 text-sm text-text outline-none focus:border-binance"
+                  />
+                  <select
+                    value={customFrameworkId || frameworkId}
+                    onChange={(e) => setCustomFrameworkId(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-line bg-bg-card2 px-2.5 py-1.5 text-sm text-text"
+                  >
+                    {frameworks?.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => void addCustomSubcategory()}
+                    className="mt-2 w-full rounded-lg bg-binance py-1.5 text-xs font-semibold text-black"
+                  >
+                    保存并选中
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3">
               <button
                 onClick={() => setDraft(null)}

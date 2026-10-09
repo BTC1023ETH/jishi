@@ -25,9 +25,27 @@ export interface TimeRecord {
   durationMin: number;
   frameworkId: string;
   subcategoryId: string;
+  /** 事件名称（2.0 新增）：用户起的具体任务名，可空 */
+  eventName?: string;
   note: string;
   valueScore: ValueScore | null;
   source: RecordSource;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** 2.0 今日计划表项 */
+export interface PlanItem {
+  id?: string;
+  /** 当日 00:00 时间戳 */
+  date: number;
+  /** 'HH:mm' 形式 */
+  startTime: string;
+  endTime: string;
+  title: string;
+  subcategoryId?: string;
+  frameworkId?: string;
+  done: boolean;
   createdAt: number;
   updatedAt: number;
 }

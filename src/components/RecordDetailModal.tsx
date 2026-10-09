@@ -20,6 +20,7 @@ export default function RecordDetailModal() {
   const [endAt, setEndAt] = useState(0);
   const [frameworkId, setFrameworkId] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
+  const [eventName, setEventName] = useState('');
   const [note, setNote] = useState('');
   const [valueScore, setValueScore] = useState<ValueScore | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -30,6 +31,7 @@ export default function RecordDetailModal() {
       setEndAt(record.endAt);
       setFrameworkId(record.frameworkId);
       setSubcategoryId(record.subcategoryId);
+      setEventName(record.eventName ?? '');
       setNote(record.note ?? '');
       setValueScore(record.valueScore ?? null);
     }
@@ -43,6 +45,7 @@ export default function RecordDetailModal() {
       durationMin: recomputeDuration(startAt, endAt),
       frameworkId,
       subcategoryId,
+      eventName: eventName.trim() || undefined,
       note,
       valueScore,
     });
@@ -67,6 +70,16 @@ export default function RecordDetailModal() {
           >
             {formatClock(startAt)} - {formatClock(endAt)} · {formatDurationMin(recomputeDuration(startAt, endAt))}
           </button>
+          <div>
+            <p className="mb-1.5 text-xs text-text-secondary">事件名称</p>
+            <input
+              type="text"
+              value={eventName}
+              onChange={(e) => setEventName(e.target.value)}
+              placeholder="例如：完成迹时 2.0 计划表"
+              className="w-full rounded-xl border border-line bg-bg-card2 px-3 py-2.5 text-sm text-text outline-none focus:border-binance"
+            />
+          </div>
           <CategoryPicker
             frameworkId={frameworkId}
             subcategoryId={subcategoryId}

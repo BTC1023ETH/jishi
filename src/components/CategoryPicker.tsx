@@ -110,13 +110,13 @@ export default function CategoryPicker({
       </div>
 
       <div>
-        <p className="mb-2 text-xs text-text-secondary">备注</p>
+        <p className="mb-2 text-xs text-text-secondary">心得与感受</p>
         <textarea
           value={note}
           onChange={(e) => onChange({ note: e.target.value })}
           rows={2}
           className="w-full rounded-xl border border-line bg-bg-card2 px-3 py-2 text-sm text-white outline-none placeholder:text-text-secondary focus:border-binance"
-          placeholder="记点什么…（可选）"
+          placeholder="记下你的感受、收获、复盘…（可选）"
         />
       </div>
     </div>

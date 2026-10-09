@@ -30,7 +30,7 @@ export async function getExportCtx(): Promise<ExportCtx> {
   };
 }
 
-export const CSV_HEADERS = ['日期', '开始时间', '结束时间', '时长(分钟)', '大框架', '细分领域', '价值评分', '备注'];
+export const CSV_HEADERS = ['日期', '开始时间', '结束时间', '时长(分钟)', '大框架', '细分领域', '事件名称', '价值评分', '心得与感受'];
 
 function recordsToRows(ctx: ExportCtx) {
   return ctx.records.map((r) => ({
@@ -40,20 +40,65 @@ function recordsToRows(ctx: ExportCtx) {
     '时长(分钟)': r.durationMin,
     大框架: ctx.fwMap.get(r.frameworkId)?.name ?? '',
     细分领域: ctx.subMap.get(r.subcategoryId)?.name ?? '',
+    事件名称: r.eventName ?? '',
     价值评分: valueName(r.valueScore),
-    备注: r.note ?? '',
+    心得与感受: r.note ?? '',
   }));
 }
 
 function downloadBlob(blob: Blob, filename: string) {
+  // 1) 优先用 File System Access API（桌面 Chrome/Edge）
+  // 2) 否则用 a[download] + 延迟 revoke（确保 iOS Safari 可下载）
+  const nav = navigator as Navigator & {
+    msSaveBlob?: (b: Blob, name: string) => boolean;
+  };
+
+  if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
+    // 异步处理，但保持同步签名
+    (async () => {
+      try {
+        const w = window as Window & {
+          showSaveFilePicker: (opts: { suggestedName?: string; types?: { description: string; accept: Record<string, string[]> }[] }) => Promise<FileSystemFileHandle>;
+        };
+        const handle = await w.showSaveFilePicker({ suggestedName: filename });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      } catch (err) {
+        // 用户取消或不支持时降级
+        triggerAnchorDownload(blob, filename);
+      }
+    })();
+    return;
+  }
+
+  // IE/旧 Edge
+  if (nav.msSaveBlob) {
+    try {
+      nav.msSaveBlob(blob, filename);
+      return;
+    } catch {
+      /* fallthrough */
+    }
+  }
+
+  triggerAnchorDownload(blob, filename);
+}
+
+function triggerAnchorDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.rel = 'noopener';
+  a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  // 延迟 revoke，iOS Safari 需要在下载真正开始之后才安全
+  setTimeout(() => {
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }, 100);
 }
 
 export async function exportCSV() {
@@ -133,7 +178,12 @@ export async function exportExcel() {
     });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(weekRows), '按周汇总');
 
-  XLSX.writeFile(wb, `迹时-数据-${formatFullDate(Date.now())}.xlsx`);
+  // 用 write + Blob 替代 XLSX.writeFile，避免其内部实现导致的兼容问题
+  const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+  downloadBlob(
+    new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    `迹时-数据-${formatFullDate(Date.now())}.xlsx`,
+  );
 }
 
 export interface BackupData {

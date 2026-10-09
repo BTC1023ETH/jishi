@@ -9,8 +9,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 );
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if ('serviceWorker' in navigator) {
+  // 开发也注册，方便调试 PWA
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn('[SW] register failed:', err);
+    });
   });
 }

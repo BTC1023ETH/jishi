@@ -12,6 +12,7 @@ export interface ArchiveDraft {
   presetSubcategoryId?: string;
   presetValueScore?: ValueScore | null;
   presetNote?: string;
+  presetEventName?: string;
 }
 
 interface AppStore {
@@ -24,6 +25,8 @@ interface AppStore {
   sleepSheetOpen: boolean;
   loginOpen: boolean;
   editRecordId: string | null;
+  /** 首页 / 统计页当前浏览的日期（精确到天），用于日历跳转定位 */
+  viewingDate: number;
   hydrated: boolean;
 
   setTab: (t: TabId) => void;
@@ -38,6 +41,7 @@ interface AppStore {
   setSleepSheetOpen: (b: boolean) => void;
   setLoginOpen: (b: boolean) => void;
   setEditRecordId: (id: string | null) => void;
+  setViewingDate: (ts: number) => void;
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -50,6 +54,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   sleepSheetOpen: false,
   loginOpen: false,
   editRecordId: null,
+  viewingDate: Date.now(),
   hydrated: false,
 
   setTab: (tab) => set({ tab }),
@@ -132,4 +137,5 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setSleepSheetOpen: (b) => set({ sleepSheetOpen: b }),
   setLoginOpen: (b) => set({ loginOpen: b }),
   setEditRecordId: (id) => set({ editRecordId: id }),
+  setViewingDate: (ts) => set({ viewingDate: ts }),
 }));

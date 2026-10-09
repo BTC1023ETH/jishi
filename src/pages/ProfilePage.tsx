@@ -34,7 +34,27 @@ export default function ProfilePage() {
   const showToast = useAppStore((s) => s.showToast);
 
   const [fwOpen, setFwOpen] = useState(false);
+  const [exporting, setExporting] = useState<'csv' | 'json' | 'xlsx' | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const runExport = async (kind: 'csv' | 'json' | 'xlsx', fn: () => Promise<void>) => {
+    if (exporting) return;
+    setExporting(kind);
+    try {
+      await fn();
+      showToast(
+        kind === 'csv' ? 'CSV 已下载' : kind === 'json' ? 'JSON 已下载' : 'Excel 已下载',
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast(`导出失败：${msg || '未知错误'}`);
+      // console.error 方便排查
+      // eslint-disable-next-line no-console
+      console.error('[export]', kind, err);
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const handleImport = async (file: File) => {
     try {
@@ -185,22 +205,25 @@ export default function ProfilePage() {
         <div className="rounded-2xl border border-line bg-bg-card p-4">
           <div className="grid grid-cols-3 gap-2">
             <button
-              onClick={() => void exportCSV()}
-              className="flex flex-col items-center gap-1 rounded-xl border border-line py-3 text-xs text-text"
+              onClick={() => runExport('csv', exportCSV)}
+              disabled={!!exporting}
+              className="flex flex-col items-center gap-1 rounded-xl border border-line py-3 text-xs text-text disabled:opacity-50"
             >
-              <Download size={16} className="text-binance" /> CSV
+              <Download size={16} className="text-binance" /> {exporting === 'csv' ? '导出中…' : 'CSV'}
             </button>
             <button
-              onClick={() => void exportJSON()}
-              className="flex flex-col items-center gap-1 rounded-xl border border-line py-3 text-xs text-text"
+              onClick={() => runExport('json', exportJSON)}
+              disabled={!!exporting}
+              className="flex flex-col items-center gap-1 rounded-xl border border-line py-3 text-xs text-text disabled:opacity-50"
             >
-              <Download size={16} className="text-binance" /> JSON
+              <Download size={16} className="text-binance" /> {exporting === 'json' ? '导出中…' : 'JSON'}
             </button>
             <button
-              onClick={() => void exportExcel()}
-              className="flex flex-col items-center gap-1 rounded-xl border border-line py-3 text-xs text-text"
+              onClick={() => runExport('xlsx', exportExcel)}
+              disabled={!!exporting}
+              className="flex flex-col items-center gap-1 rounded-xl border border-line py-3 text-xs text-text disabled:opacity-50"
             >
-              <Download size={16} className="text-binance" /> Excel
+              <Download size={16} className="text-binance" /> {exporting === 'xlsx' ? '导出中…' : 'Excel'}
             </button>
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">

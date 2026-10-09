@@ -1,24 +1,39 @@
-import 'dotenv/config';
+// override:true 让 .env 覆盖系统/用户级环境变量，避免本机残留旧 key 干扰
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 import express from 'express';
 import cors from 'cors';
 import authRouter from './routes/auth.js';
+import planRouter from './routes/plan.js';
 
 const app = express();
 
-// CORS：优先使用 .env 配置的来源白名单；未配置则放开（便于联调）
+// CORS：白名单 + 开发模式自动放行任意 localhost/127.0.0.1（任意端口）
 const allowedOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
+const isLocalDev = (origin) => {
+  if (!origin) return true; // 同源 / curl 不带 Origin
+  try {
+    const u = new URL(origin);
+    return u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname.endsWith('.localhost');
+  } catch {
+    return false;
+  }
+};
+
 app.use(
   cors({
     origin(origin, cb) {
-      if (!allowedOrigins.length || !origin || allowedOrigins.includes(origin)) {
-        cb(null, true);
-      } else {
-        cb(new Error('Not allowed by CORS'));
+      // 未配置白名单 → 全部放行（联调阶段）
+      if (!allowedOrigins.length) return cb(null, true);
+      // 配置了白名单：白名单内 OR 本地开发来源都放行
+      if (!origin || allowedOrigins.includes(origin) || isLocalDev(origin)) {
+        return cb(null, true);
       }
+      cb(new Error('Not allowed by CORS'));
     },
   }),
 );
@@ -30,6 +45,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api', authRouter);
+app.use('/api/plan', planRouter);
 
 // 404
 app.use((_req, res) => {
