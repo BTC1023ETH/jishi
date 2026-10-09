@@ -2,7 +2,7 @@
 
 一个低摩擦记录时间流向的工具。本地优先、断网可用的 Web / PWA 应用，响应式适配手机与桌面，深色底 + 币安金金融科技风。
 
-- 前端：`time.jadebeads.cn`（静态站点，React 构建产物）
+- 前端：`www.jadebeads.cn`（静态站点，React 构建产物）
 - 后端：`api.jadebeads.cn`（Node.js + Express，邮箱验证码 + 账号注册）
 
 ## 技术栈
